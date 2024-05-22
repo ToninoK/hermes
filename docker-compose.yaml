@@ -1,0 +1,27 @@
+services:
+  api:
+    container_name: hermes_api
+    build: .
+    env_file:
+      - .env
+    depends_on:
+      - hermes_db
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+  hermes_db:
+    container_name: hermes_db
+    image: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      PGDATA: "/var/lib/postgresql/data"
+      POSTGRES_PASSWORD: semreh
+      POSTGRES_DB: "hermes_db"
+      POSTGRES_USER: hermes
+  hermes_cache:
+    container_name: hermes_cache
+    image: "redis:alpine"
+volumes:
+  pg_data: {}

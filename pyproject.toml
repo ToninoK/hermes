@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "hermes"
+version = "0.1.0"
+description = ""
+authors = ["Tonino Kastelan <tonino.kastelan@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+	{ include = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "~3.9"
+fastapi = "^0.111.0"
+confluent-kafka = "^2.4.0"
+uvicorn = "^0.29.0"
+gunicorn = "^22.0.0"
+pyjwt = "^2.8.0"
+aiopg = "^1.4.0"
+redis = "^5.0.4"
+yoyo-migrations = "^8.2.0"
+passlib = "^1.7.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
