@@ -3,15 +3,17 @@ from typing import Annotated
 from fastapi import APIRouter, Body, HTTPException, Depends
 
 from src.helpers.auth import create_access_token, get_current_user, JWTBearer, get_password_hash, verify_password
-from src.db.users import create_user, get_user_by_email
-from src.schemas.user import UserAuth
+from src.helpers.cache import acl_cache
+from src.db.users import create_user, get_user_by_email, update_user_by_email
+from src.schemas.user import UserAuth, UserData
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 @router.post('/signup')
 async def signup(user_data: UserAuth):
-    user = await get_user_by_email(user_data["email"])
+    user_data = dict(user_data)
+    user = await get_user_by_email(user_data["email"], fields=["email"])
     if user:
         raise HTTPException(
             status_code=409,
@@ -30,8 +32,8 @@ async def signup(user_data: UserAuth):
 
 @router.post('/login')
 async def login(user: UserAuth):
-
-    db_user = await get_user_by_email(user["email"])
+    user = dict(user)
+    db_user = await get_user_by_email(user["email"], fields=["email", "password", "role"])
     if not db_user:
         raise HTTPException(
             status_code=404,
@@ -50,7 +52,28 @@ async def login(user: UserAuth):
     return token
 
 
-@router.get("/identify/me")
-async def identify(token=Depends(JWTBearer)):
-    user = get_current_user(token)
+@router.post('/<email>/grant')
+async def login(user: UserData, token=Depends(JWTBearer())):
+    current_user = await get_current_user(token)
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to perform this action",
+        )
+    if "password" in user:
+        user["password"] = get_password_hash(user["password"])
+    user = await update_user_by_email(email, user)
     return user
+
+
+@router.get("/identify/me")
+async def identify(token=Depends(JWTBearer())):
+    user = await get_current_user(token)
+    return user
+
+
+@router.get("/my/access")
+async def access(token=Depends(JWTBearer())):
+    user = await get_current_user(token)
+    data, _ = acl_cache.get(user["role"])
+    return data or {}

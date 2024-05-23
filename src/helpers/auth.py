@@ -72,7 +72,8 @@ def decode_jwt(token: str):
     :return: data decoded from the token
     """
     try:
-        if auth_cache.get(token):
+        _, hit = auth_cache.get(token)
+        if hit:
             raise HTTPException(status_code=401, detail="Token invalid, request a new one")
 
         payload = jwt.decode(token, Config.SECRET_KEY, algorithms=[ALGORITHM])
@@ -97,7 +98,7 @@ async def get_current_user(token: str):
     :return: currently logged in user
     """
     payload = decode_jwt(token)
-    user = await get_user_by_email(payload.get("sub"))
+    user = await get_user_by_email(payload.get("sub"), ["id", "email", "role"])
     if user is None:
         raise HTTPException(status_code=401)
 
@@ -106,7 +107,7 @@ async def get_current_user(token: str):
 
 class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
-        super().__init__(auto_error=auto_error)
+        super().__init__(auto_error=auto_error, bearerFormat="JWT")
 
     async def __call__(self, request: Request):
         """Method which is called when the class is invoked

@@ -1,0 +1,74 @@
+---
+admin:
+  daily_sales:
+    - date
+    - total_revenue
+    - number_of_transactions
+    - average_transaction_value
+    - sales_by_product_category
+    - sales_by_payment_method
+    - discounts_applied
+    - refunds_processed
+    - sales_by_hour
+    - sales_by_store_location
+  warehouse_inventory:
+    - product_name
+    - product_sku
+    - quantity_on_hand
+    - quantity_on_order
+    - reorder_point
+    - reorder_quantity
+    - inventory_value
+    - inventory_turnover_rate
+    - days_of_supply
+    - warehouse_location
+  employee_sales:
+    - employee_name
+    - employee_id
+    - total_sales
+    - number_of_transactions
+    - average_transaction_value
+    - sales_by_product_category
+    - upsell_success_rate
+    - customer_satisfaction_score
+    - average_handling_time
+    - attendance_record
+
+sales_manager:
+  daily_sales:
+    - date
+    - total_revenue
+    - number_of_transactions
+    - average_transaction_value
+    - sales_by_product_category
+    - sales_by_payment_method
+    - discounts_applied
+    - refunds_processed
+  employee_sales:
+    - employee_name
+    - total_sales
+    - number_of_transactions
+    - average_transaction_value
+    - upsell_success_rate
+    - customer_satisfaction_score
+
+register_worker:
+  daily_sales:
+    - date
+    - number_of_transactions
+    - average_transaction_value
+    - discounts_applied
+    - refunds_processed
+
+warehouse_manager:
+    warehouse_inventory:
+      - product_name
+      - product_sku
+      - quantity_on_hand
+      - quantity_on_order
+      - reorder_point
+      - reorder_quantity
+      - inventory_value
+      - inventory_turnover_rate
+      - days_of_supply
+      - warehouse_location
