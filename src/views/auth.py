@@ -75,8 +75,3 @@ async def access(token=Depends(JWTBearer())):
     user = await get_current_user(token)
     data, _ = acl_cache.get(user["role"])
     return data or {}
-
-
-@router.get("/hash")
-async def hash_password(password: str):
-    return get_password_hash(password)
