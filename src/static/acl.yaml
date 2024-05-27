@@ -5,6 +5,7 @@ company_manager:
   store_performance:
     - store_city
     - store_country
+    - date
     - total_sales
     - average_sale_value
     - number_of_transactions
