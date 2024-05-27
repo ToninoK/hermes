@@ -53,15 +53,13 @@ async def login(user: UserAuth):
 
 
 @router.post('/<email>/grant')
-async def login(user: UserData, token=Depends(JWTBearer())):
+async def grant(user: UserData, token=Depends(JWTBearer())):
     current_user = await get_current_user(token)
     if current_user["role"] != "admin":
         raise HTTPException(
             status_code=403,
             detail="You do not have permission to perform this action",
         )
-    if "password" in user:
-        user["password"] = get_password_hash(user["password"])
     user = await update_user_by_email(email, user)
     return user
 
@@ -77,3 +75,8 @@ async def access(token=Depends(JWTBearer())):
     user = await get_current_user(token)
     data, _ = acl_cache.get(user["role"])
     return data or {}
+
+
+@router.get("/hash")
+async def hash_password(password: str):
+    return get_password_hash(password)
