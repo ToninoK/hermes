@@ -8,6 +8,11 @@ class UserAuth(BaseModel):
     store_id: int
 
 
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
 class UserData(BaseModel):
     email: str
     role: str

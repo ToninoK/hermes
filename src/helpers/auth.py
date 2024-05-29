@@ -98,7 +98,7 @@ async def get_current_user(token: str):
     :return: currently logged in user
     """
     payload = decode_jwt(token)
-    user = await get_user_by_email(payload.get("sub"), ["id", "email", "role"])
+    user = await get_user_by_email(payload.get("sub"), ["id", "email", "role", "store_id"])
     if user is None:
         raise HTTPException(status_code=401)
 

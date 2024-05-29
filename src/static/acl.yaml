@@ -3,33 +3,84 @@ admin:
 employee:
 company_manager:
   store_performance:
-    - store_city
-    - store_country
-    - date
-    - total_sales
-    - average_sale_value
-    - number_of_transactions
+    dimensions:
+      - store_country
+      - store_city
+      - date
+    metrics:
+      - total_sales
+      - average_sale_value
+      - number_of_transactions
+    filters:
+      store_id:
+      start_date:
+      end_date:
   store_inventory:
-    - product_name
-    - store_country
-    - store_city
-    - quantity
+    dimensions:
+      - product_name
+      - store_country
+      - store_city
+    metrics:
+      - quantity
+    filters:
+      product_name:
+      store_id:
   product_performance:
-    - product_name
-    - total_sales
-    - average_sale_value
-    - number_of_transactions
-    - store_country
-    - store_city
+    dimensions:
+      - product_name
+      - store_country
+      - store_city
+    metrics:
+      - total_sales
+      - average_sale_value
+      - number_of_transactions
+    filters:
+      product_name:
+      store_id:
+      start_date:
+      end_date:
+  employee_performance:
+    dimensions:
+      - employee_name
+      - store_country
+      - store_city
+    metrics:
+      - employee_total_sales
+      - employee_average_sale_value
+      - number_of_transactions
+    filters:
+      employee_name:
+      store_id:
+      start_date:
+      end_date:
 
 store_manager:
   employee_performance:
-    - employee_name
-    - employee_total_sales
-    - employee_average_sale_value
-    - number_of_transactions
+    dimensions:
+      - employee_name
+      - date
+    metrics:
+      - employee_total_sales
+      - employee_average_sale_value
+      - number_of_transactions
+    filters:
+      employee_name:
+      start_date:
+      end_date:
+      store_id:
+        conditions:
+          - is_own_store
   product_performance:
-    - product_name
-    - total_sales
-    - average_sale_value
-    - number_of_transactions
+    dimensions:
+      - product_name
+    metrics:
+      - total_sales
+      - average_sale_value
+      - number_of_transactions
+    filters:
+      product_name:
+      start_date:
+      end_date:
+      store_id:
+        conditions:
+          - is_own_store

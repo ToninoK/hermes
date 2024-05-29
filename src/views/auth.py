@@ -1,11 +1,9 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Body, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends
 
 from src.helpers.auth import create_access_token, get_current_user, JWTBearer, get_password_hash, verify_password
 from src.helpers.cache import acl_cache
 from src.db.users import create_user, get_user_by_email, update_user_by_email
-from src.schemas.user import UserAuth, UserData
+from src.schemas.user import UserAuth, UserData, UserLogin
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -31,8 +29,8 @@ async def signup(user_data: UserAuth):
 
 
 @router.post('/login')
-async def login(user: UserAuth):
-    user = dict(user)
+async def login(user: UserLogin):
+    user = user.model_dump()
     db_user = await get_user_by_email(user["email"], fields=["email", "password", "role"])
     if not db_user:
         raise HTTPException(
