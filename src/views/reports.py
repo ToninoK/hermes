@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
+import pickle
 
 from src.helpers.auth import JWTBearer
+from src.helpers.kafka import Kafka
 from src.schemas.report_config import ReportConfig
 
 router = APIRouter(
@@ -12,5 +14,6 @@ router = APIRouter(
 @router.post("/create")
 async def create_report(report_config: ReportConfig, token=Depends(JWTBearer())):
     await report_config.verify_acl(token)
-
-    return {"report_config": report_config.model_dump()}
+    message = await report_config.generate_config(token=token)
+    Kafka.produce("report_requests", pickle.dumps(message))
+    return {"message": "Report request sent", "report_config": message}

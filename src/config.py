@@ -12,7 +12,6 @@ class Config:
         "sasl.mechanism": "PLAIN",
         "sasl.username": KAFKA_USERNAME,
         "sasl.password": KAFKA_PASSWORD,
-        "client.id": socket.gethostname()
     }
 
     POSTGRES_HOST = environ.get("POSTGRES_HOST", "hermes_db")
