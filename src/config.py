@@ -1,4 +1,3 @@
-import socket
 from os import environ
 
 
