@@ -20,6 +20,7 @@ aiopg = "^1.4.0"
 redis = "^5.0.4"
 yoyo-migrations = "^8.2.0"
 passlib = "^1.7.4"
+sqlalchemy = "^2.0.30"
 
 
 [build-system]

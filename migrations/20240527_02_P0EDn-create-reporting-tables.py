@@ -30,7 +30,8 @@ steps = [
             store_id INTEGER REFERENCES stores(id),
             product_id INTEGER REFERENCES products(id),
             order_quantity INTEGER,
-            employee_id INTEGER REFERENCES employees(id)
+            employee_id INTEGER REFERENCES employees(id),
+            date DATE DEFAULT CURRENT_DATE
         )""",
         "DROP TABLE sales",
     ),

@@ -1,70 +1,76 @@
 import hashlib
 import json
-from typing import List, Union, Literal
+from typing import List, Union, Literal, Annotated
 
 from fastapi.exceptions import HTTPException
-from pydantic import BaseModel, NaiveDatetime, EmailStr
+from pydantic import BaseModel, NaiveDatetime, EmailStr, Field
 
 from src.helpers.auth import get_current_user
 from src.helpers.acl import has_permission
 
 
 class StoreIdFilter(BaseModel):
-    field: str = "store_id"
+    field: Literal["store_id"]
     operator: Literal["=", "IN", "!=", "NOT IN"]
     value: Union[int, List[int]]
 
 
 class ProductNameFilter(BaseModel):
-    field: str = "product_name"
+    field: Literal["product_name"]
     operator: Literal["=", "IN", "!=", "NOT IN"]
     value: Union[str, List[str]]
 
 
 class EmployeeNameFilter(BaseModel):
-    field: str = "employee_name"
+    field: Literal["employee_name"]
     operator: Literal["=", "IN", "!=", "NOT IN"]
     value: Union[str, List[str]]
 
 
 class StartDateFilter(BaseModel):
-    field: str = "start_date"
+    field: Literal["start_date"]
     operator: Literal["=", "!=", ">", "<", ">=", "<="]
-    value: NaiveDatetime
+    value: str
 
 
 class EndDateFilter(BaseModel):
-    field: str = "end_date"
+    field: Literal["end_date"]
     operator: Literal["=", "!=", ">", "<", ">=", "<="]
-    value: NaiveDatetime
+    value: str
+
+
+StorePerformanceFilter = Annotated[Union[StoreIdFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")]
+EmployeePerformanceFilter = Annotated[Union[EmployeeNameFilter, StoreIdFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")]
+ProductPerformanceFilter = Annotated[Union[ProductNameFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")]
+StoreInventoryFilter = Annotated[Union[StoreIdFilter, ProductNameFilter], Field(discriminator="field")]
 
 
 class StorePerformanceReportConfig(BaseModel):
     report_name: str = "store_performance"
     metrics: List[str]
     dimensions: List[str]
-    filters: List[Union[StoreIdFilter, StartDateFilter, EndDateFilter]]
+    filters: List[StorePerformanceFilter]
 
 
 class EmployeePerformanceReportConfig(BaseModel):
     report_name: str = "employee_performance"
     metrics: List[str]
     dimensions: List[str]
-    filters: List[Union[EmployeeNameFilter, StoreIdFilter, StartDateFilter, EndDateFilter]]
+    filters: List[EmployeePerformanceFilter]
 
 
 class ProductPerformanceReportConfig(BaseModel):
     report_name: str = "product_performance"
     metrics: List[str]
     dimensions: List[str]
-    filters: List[Union[ProductNameFilter, StoreIdFilter, StartDateFilter, EndDateFilter]]
+    filters: List[ProductPerformanceFilter]
 
 
 class StoreInventoryReportConfig(BaseModel):
     report_name: str = "store_inventory"
     metrics: List[str]
     dimensions: List[str]
-    filters: List[Union[ProductNameFilter, StoreIdFilter]]
+    filters: List[StoreInventoryFilter]
 
 
 class ReportConfig(BaseModel):

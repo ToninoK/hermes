@@ -4,155 +4,242 @@ The implementation itself can be a lot smarter than the one provided below.
 This simply serves as a means to demonstrate the complete concept of this project.
 """
 
-class StorePerformanceReport:
-    """Aggregates the data using the stores table, products table and the sales table."""
-    @classmethod
-    def generate(cls, report_config: dict):
-        query = cls._build_query(report_config)
 
-    @classmethod
-    def _build_filters():
-        start = report_config.get("start_date")
-        end = report_config.get("end_date")
-        params = [start, end]
-        filters = [
-            "s.date >= %s",
-            "s.date < %s",
-        ]
-        if city := report_config.get("city"):
-            filters.append("s.city = %s")
-            params.append(city)
+from os import environ
 
-        query = f"WHERE {" AND ".join(filters) if filters else "1=1"}"
-        # mogrify and return the query
-        
-    @classmethod
-    def _build_query(cls, report_config: dict):
-        where = cls._build_filters(report_config)
-        query = f"""
-            SELECT
-                s.city,
-                s.country,
-                s.date,
-                SUM(p.price) as total_sales,
-                COUNT(s.product_id) as total_products_sold,
-                AVG(p.price)/COUNT(s.product_id) as avg_order_quantity
-            FROM sales AS s
-            INNER JOIN stores AS st
-                ON s.store_id = st.id
-            INNER JOIN products AS p
-                ON s.product_id = p.id
-            {where}
-            GROUP BY s.city, s.country, s.date
-        """
+import sqlalchemy as sa
+from sqlalchemy.sql.expression import Select, and_, select
 
 
-class StoreInventoryReport:
-    """Aggregates and displays the current inventory of all stores using the stores, inventory and product tables."""
+_DSN = environ.get("PGHOST", "")
 
-    @classmethod
-    def generate(cls, report_config: dict):
-        query = cls._build_query(report_config)
+metadata = sa.MetaData()
+
+stores_table = sa.Table('stores', metadata,
+    sa.Column('id', sa.Integer, primary_key=True),
+    sa.Column('city', sa.String(255)),
+    sa.Column('country', sa.String(255)),
+)
+
+employees_table = sa.Table('employees', metadata,
+    sa.Column('id', sa.Integer, primary_key=True),
+    sa.Column('email', sa.String(255)),
+    sa.Column('password', sa.String(255)),
+    sa.Column('role', sa.String(255)),
+    sa.Column('name', sa.String(255)),
+    sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id')),
+)
+
+products_table = sa.Table('products', metadata,
+    sa.Column('id', sa.Integer, primary_key=True),
+    sa.Column('name', sa.String(255)),
+    sa.Column('category', sa.String(255)),
+    sa.Column('price', sa.Float),
+)
+
+inventory_table = sa.Table('inventory', metadata,
+    sa.Column('product_id', sa.Integer, sa.ForeignKey('products.id')),
+    sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id')),
+    sa.Column('quantity', sa.Integer),
+)
+
+sales_table = sa.Table('sales', metadata,
+    sa.Column('id', sa.Integer, primary_key=True),
+    sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id')),
+    sa.Column('product_id', sa.Integer, sa.ForeignKey('products.id')),
+    sa.Column('order_quantity', sa.Integer),
+    sa.Column('employee_id', sa.Integer, sa.ForeignKey('employees.id')),
+    sa.Column('date', sa.Date, default=sa.func.current_date()),
+)
 
 
-    @classmethod
-    def _build_filters():
-        filters = []
-        params = []
-        if product_id := report_config.get("product_id"):
-            filters.append("i.product_id = %s")
-            params.append(product_id)
-        query = f"WHERE {" AND ".join(filters) if filters else "1=1"}"
-        # mogrify and return the query
+import operator
 
-    @classmethod
-    def _build_query(cls, report_config: dict):
-        where = cls._build_filters(report_config)
-        query = f"""
-            SELECT
-                st.city,
-                st.country,
-                i.quantity,
-                p.name
-            FROM inventory AS i
-            INNER JOIN stores AS st
-                ON i.store_id = st.id
-            INNER JOIN products AS p
-                ON i.product_id = p.id
-            {where}
-            GROUP BY st.city, st.country, p.name
-        """
-    
+class BaseReport:
+    NAME_MAPPING = {}
 
-class ProductPerformanceReport:
+    JOIN = None
 
-    dimension_mapping = {
-        "city": "s.city",
-        "country": "s.country",
+    OPERATOR_MAPPING = {
+        "=": operator.eq,
+        ">": operator.gt,
+        "<": operator.lt,
+        ">=": operator.ge,
+        "<=": operator.le,
+        "!=": operator.ne,
+        "IN": lambda field, value: field.in_(value),
+        "NOT IN": lambda field, value: field.not_in(value),
     }
 
+    def __init__(self, report_config) -> None:
+        self.report_config = report_config.get("config")
 
-    @classmethod
-    def _build_filters(cls, report_config):
-        filters = []
-        params = []
-        if product_id := report_config.get("product_id"):
-            filters.append("s.product_id = %s")
-            params.append(product_id)
-        query = f"WHERE {" AND ".join(filters) if filters else "1=1"}"
-        # mogrify and return the query
+    def build_query(self):
+        query = self.select()
+        query = self.apply_filters(query)
+        query = self.apply_group_by(query).select_from(self.JOIN)
+        return query
 
-    @classmethod
-    def _build_query(cls, report_config: dict):
-        where = cls._build_filters(report_config)
-        dimensions = report_config.get("dimensions", [])
-        dimensions = [cls.dimension_mapping.get(dim) for dim in dimensions]
-        if not all(dimensions):
-            raise ValueError("Invalid dimension provided")
-        query = f"""
-            SELECT
-                p.name,
-                {", ".join(dimensions)},
-                SUM(p.price) as total_sales,
-                COUNT(s.product_id) as total_products_sold,
-                AVG(p.price)/COUNT(s.product_id) as avg_order_quantity
-            FROM sales AS s
-            INNER JOIN products AS p
-                ON s.product_id = p.id
-            {where}
-            GROUP BY {", ".join(dimensions)}
-        """
+    @property
+    def metrics(self):
+        return self.report_config.get("metrics", [])
 
-    @classmethod
-    def generate(cls, report_config: dict):
-        query = cls._build_query(report_config)
+    @property
+    def dimensions(self):
+        return self.report_config.get("dimensions", [])
+    
+    @property
+    def filters(self):
+        return self.report_config.get("filters", [])
+
+    def _consume_filter(self, filter):
+        field = filter.get("field")
+        value = filter.get("value")
+        operator = filter.get("operator")
+
+        mapped_field = self.NAME_MAPPING.get(field)
+        op_func = self.OPERATOR_MAPPING.get(operator)
+        if op_func is None or mapped_field is None:
+            raise ValueError("Invalid operator or field provided")
+        
+        return op_func(mapped_field, value)
+    
+    def select(self):
+        dimensions = [self.NAME_MAPPING.get(dim) for dim in self.dimensions]
+        metrics = [self.NAME_MAPPING.get(metric) for metric in self.metrics]
+        return select(dimensions + metrics)
+
+    def apply_filters(self, query: Select) -> Select:
+        filters = [self._consume_filter(filter) for filter in self.filters]
+        return query.where(and_(*filters) if filters else sa.true())
+    
+    def apply_group_by(self, query: Select) -> Select:
+        return query.group_by(*[self.NAME_MAPPING.get(dim) for dim in self.dimensions])
 
 
-class EmployeePerformanceReport:
+class StorePerformanceReport(BaseReport):
 
-    @classmethod
-    def generate(cls, report_config: dict):
-        pass
+    NAME_MAPPING = {
+        "store_city": stores_table.c.city.label("store_city"),
+        "store_country": stores_table.c.country.label("store_country"),
+        "date": sales_table.c.date.label("date"),
+        "total_sales": sa.func.sum(products_table.c.price).label("total_sales"),
+        "number_of_transactions": sa.func.count(sales_table.c.product_id).label("number_of_transactions"),
+        "average_sale_value": sa.func.avg(products_table.c.price)/sa.func.count(sales_table.c.product_id).label("average_sale_value"),
+        "store_id": sales_table.c.store_id.label("store_id"),
+        "start_date": sales_table.c.date.label("start_date"),
+        "end_date": sales_table.c.date.label("end_date"),
+    }
+
+    JOIN = (
+        sales_table.join(products_table, sales_table.c.product_id == products_table.c.id)
+        .join(stores_table, sales_table.c.store_id == stores_table.c.id)
+    )
 
 
-class ReportFactory:
+class StoreInventoryReport(BaseReport):
+    """Aggregates and displays the current inventory of all stores using the stores, inventory and product tables."""
+
+    NAME_MAPPING = {
+        "store_city": stores_table.c.city.label("store_city"),
+        "store_country": stores_table.c.country.label("store_country"),
+        "quantity": inventory_table.c.quantity.label("quantity"),
+        "product_name": products_table.c.name.label("product_name"),
+        "store_id": stores_table.c.id.label("store_id"),
+    }
+
+    JOIN = (
+        stores_table.join(inventory_table, stores_table.c.id == inventory_table.c.store_id)
+        .join(products_table, inventory_table.c.product_id == products_table.c.id)
+    )
+
+
+class ProductPerformanceReport(BaseReport):
+
+    NAME_MAPPING = {
+        "product_name": products_table.c.name.label("product_name"),
+        "store_country": stores_table.c.country.label("store_country"),
+        "store_city": stores_table.c.city.label("store_city"),
+        "total_sales": sa.func.sum(products_table.c.price).label("total_sales"),
+        "average_sale_value": sa.func.avg(products_table.c.price).label("average_sale_value"),
+        "total_products_sold": sa.func.sum(sales_table.c.order_quantity).label("total_products_sold"),
+        "store_id": stores_table.c.id.label("store_id"),
+        "start_date": sales_table.c.date.label("start_date"),
+        "end_date": sales_table.c.date.label("end_date"),
+    }
+
+    JOIN = (
+        products_table.join(sales_table, products_table.c.id == sales_table.c.product_id)
+        .join(stores_table, sales_table.c.store_id == stores_table.c.id)
+    )
+
+class EmployeePerformanceReport(BaseReport):
+
+    NAME_MAPPING = {
+        "employee_name": employees_table.c.name.label("employee_name"),
+        "store_city": stores_table.c.city.label("store_city"),
+        "store_country": stores_table.c.country.label("store_country"),
+        "employee_total_sales": sa.func.sum(products_table.c.price).label("employee_total_sales"),
+        "employee_average_sale_value": sa.func.avg(products_table.c.price).label("employee_average_sale_value"),
+        "number_of_transactions": sa.func.count(sales_table.c.product_id).label("number_of_transactions"),
+        "store_id": stores_table.c.id.label("store_id"),
+        "start_date": sales_table.c.date.label("start_date"),
+        "end_date": sales_table.c.date.label("end_date"),
+    }
+
+    JOIN = (
+        employees_table.join(sales_table, employees_table.c.id == sales_table.c.employee_id)
+        .join(products_table, sales_table.c.product_id == products_table.c.id)
+        .join(stores_table, sales_table.c.store_id == stores_table.c.id)
+    )
+
+
+class ReportGeneratorAPI:
     REPORT_MAPPING = {
         "store_performance": StorePerformanceReport,
         "store_inventory": StoreInventoryReport,
         "product_performance": ProductPerformanceReport,
         "employee_performance": EmployeePerformanceReport
     }
+
+    def __init__(self) -> None:
+        self.engine = None
+
+    def _init_engine(self):
+        if self.engine:
+            return
+        self.engine = sa.create_engine(_DSN)
     
-    @classmethod
+    def _conn(self):
+        self._init_engine()
+        return self.engine.connect()
+
     def _get_report_class(self, report_type):
         return self.REPORT_MAPPING.get(report_type)
 
-    @classmethod
-    def generate(cls, report_config: dict):
-        report_type = report_config.get("report_type")
-        klass = cls._get_report_class(report_type)
+    def generate(self, report_config: dict):
+        print(report_config)
+        report_type = report_config.get("config", {}).get("report_name", {})
+        klass = self._get_report_class(report_type)
         if klass:
-            klass.generate(report_config)
+            instance = klass(report_config)
+            query = instance.build_query()
+            print(query.compile(compile_kwargs={"literal_binds": True}))
+            try:
+                results = self.run_query(query)
+            except Exception as e:
+                print(e)
+            print(results)
+            # self.to_csv(results)
         else:
-            raise ValueError(f"Invalid report type: {self.report_type}")
+            raise ValueError(f"Invalid report type: {report_type}")
 
+    def to_csv(self, results):
+        pass
+
+    def run_query(self, query: Select):
+        with self._conn() as conn:
+            result = conn.execute(query)
+            return result.fetchall()
+
+ReportGenerator = ReportGeneratorAPI()

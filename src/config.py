@@ -13,10 +13,7 @@ class Config:
         "sasl.password": KAFKA_PASSWORD,
     }
 
-    POSTGRES_HOST = environ.get("POSTGRES_HOST", "hermes_db")
-    POSTGRES_DB = environ.get("POSTGRES_DB", "hermes_db")
-    POSTGRES_USER = environ.get("POSTGRES_USER", "hermes")
-    POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD", "semreh")
+    PG_CONN = environ.get("PGHOST", "")
 
     REDIS_HOST = environ.get("REDIS_HOST", "hermes_cache")
     REDIS_PORT = environ.get("REDIS_PORT", 6379)
