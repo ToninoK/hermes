@@ -218,28 +218,23 @@ class ReportGeneratorAPI:
         return self.REPORT_MAPPING.get(report_type)
 
     def generate(self, report_config: dict):
-        print(report_config)
         report_type = report_config.get("config", {}).get("report_name", {})
         klass = self._get_report_class(report_type)
         if klass:
             instance = klass(report_config)
             query = instance.build_query()
-            print(query.compile(compile_kwargs={"literal_binds": True}))
             try:
                 results = self.run_query(query)
             except Exception as e:
-                print(e)
-            print(results)
-            # self.to_csv(results)
+                print(f"Exception while running query: {e}")
+            return results
         else:
             raise ValueError(f"Invalid report type: {report_type}")
-
-    def to_csv(self, results):
-        pass
+        return []
 
     def run_query(self, query: Select):
         with self._conn() as conn:
             result = conn.execute(query)
-            return result.fetchall()
+            return [dict(row) for row in result.fetchall()]
 
 ReportGenerator = ReportGeneratorAPI()
