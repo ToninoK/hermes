@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 
-from src.helpers.auth import create_access_token, get_current_user, JWTBearer, get_password_hash, verify_password
+from src.helpers.auth import create_access_token, get_current_user, JWTBearer, get_password_hash, verify_password, \
+    blacklist_token
 from src.helpers.cache import acl_cache
 from src.db.users import create_user, get_user_by_email, update_user_by_email
 from src.schemas.user import UserAuth, UserData, UserLogin
@@ -51,7 +52,7 @@ async def login(user: UserLogin):
 
 
 @router.post('/<email>/grant')
-async def grant(user: UserData, token=Depends(JWTBearer())):
+async def grant(email: str, user: UserData, token=Depends(JWTBearer())):
     current_user = await get_current_user(token)
     if current_user["role"] != "admin":
         raise HTTPException(
@@ -60,6 +61,12 @@ async def grant(user: UserData, token=Depends(JWTBearer())):
         )
     user = await update_user_by_email(email, user)
     return user
+
+
+@router.get('/logout')
+async def logout(token=Depends(JWTBearer())):
+    blacklist_token(token)
+    return Response(status_code=200)
 
 
 @router.get("/identify/me")

@@ -4,7 +4,7 @@ The implementation itself can be a lot smarter than the one provided below.
 This simply serves as a means to demonstrate the complete concept of this project.
 """
 
-
+import operator
 from os import environ
 
 import sqlalchemy as sa
@@ -53,8 +53,6 @@ sales_table = sa.Table('sales', metadata,
 )
 
 
-import operator
-
 class BaseReport:
     NAME_MAPPING = {}
 
@@ -72,7 +70,7 @@ class BaseReport:
     }
 
     def __init__(self, report_config) -> None:
-        self.report_config = report_config.get("config")
+        self.report_config = report_config
 
     def build_query(self):
         query = self.select()
@@ -107,7 +105,8 @@ class BaseReport:
     def select(self):
         dimensions = [self.NAME_MAPPING.get(dim) for dim in self.dimensions]
         metrics = [self.NAME_MAPPING.get(metric) for metric in self.metrics]
-        return select(dimensions + metrics)
+        selectable = dimensions + metrics
+        return select(*selectable)
 
     def apply_filters(self, query: Select) -> Select:
         filters = [self._consume_filter(filter) for filter in self.filters]
@@ -173,6 +172,7 @@ class ProductPerformanceReport(BaseReport):
         .join(stores_table, sales_table.c.store_id == stores_table.c.id)
     )
 
+
 class EmployeePerformanceReport(BaseReport):
 
     NAME_MAPPING = {
@@ -218,23 +218,20 @@ class ReportGeneratorAPI:
         return self.REPORT_MAPPING.get(report_type)
 
     def generate(self, report_config: dict):
-        report_type = report_config.get("config", {}).get("report_name", {})
+        report_type = report_config.get("report_name", {})
         klass = self._get_report_class(report_type)
         if klass:
             instance = klass(report_config)
             query = instance.build_query()
-            try:
-                results = self.run_query(query)
-            except Exception as e:
-                print(f"Exception while running query: {e}")
-            return results
+            compiled = query.compile(bind=self.engine, compile_kwargs={"literal_binds": True})
+            return str(compiled)
         else:
-            raise ValueError(f"Invalid report type: {report_type}")
-        return []
+            raise ValueError("InvalidReportType")
 
     def run_query(self, query: Select):
         with self._conn() as conn:
             result = conn.execute(query)
             return [dict(row) for row in result.fetchall()]
+
 
 ReportGenerator = ReportGeneratorAPI()

@@ -1,13 +1,10 @@
 import csv
 
 from airflow.decorators import dag, task
+from airflow.hooks.postgres_hook import PostgresHook
 from pendulum import datetime
-from airflow.providers.apache.kafka.operators.consume import ConsumeFromTopicOperator
 
-from airflow.operators.python_operator import PythonOperator
 from airflow.providers.smtp.hooks.smtp import SmtpHook
-
-from dags.report_generation.report_factory import ReportGenerator
 
 
 @dag(
@@ -20,14 +17,21 @@ def consume_reports():
 
     @task
     def generate_report(**context):
-        results = ReportGenerator.generate(context["params"]["config"])
-        return results
+        hook = PostgresHook(postgres_conn_id="postgres_conn")
+        conn = hook.get_conn()
+        with conn.cursor() as cursor:
+            query = context["params"]["config"]["query"]
+            cursor.execute(query)
+            results = cursor.fetchall()
+            columns = [col.name for col in cursor.description]
+        return [dict(zip(columns, row)) for row in results]
     
     @task
     def store_to_csv(**context):
         results = context["task_instance"].xcom_pull(task_ids="generate_report")
+        if not results:
+            return
         file_path = "./dags/include/reports/" + context["params"]["config"]["config_key"] + ".csv"
-        import os
         with open(file_path, "w") as f:
             writer = csv.DictWriter(f, fieldnames=results[0].keys())
             writer.writeheader()
@@ -35,6 +39,9 @@ def consume_reports():
     
     @task
     def send_mail(**context):
+        results = context["task_instance"].xcom_pull(task_ids="generate_report")
+        if not results:
+            return
         config_key = context["params"]["config"]["config_key"]
         emails = context["params"]["config"]["emails"]
         hook = SmtpHook(smtp_conn_id='mailtrap_smtp')

@@ -8,7 +8,9 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 KAFKA_TOPIC = "report_requests"
 
+
 def trigger_report_generation_dag(event, **context):
+    print("Triggering report: ", event)
     TriggerDagRunOperator(
         trigger_dag_id="report_generation",
         task_id=f"triggered_downstream_report_generation_dag_{uuid.uuid4()}",
@@ -26,6 +28,7 @@ def process_report_request(message):
     message_content = json.loads(message.value())
     return message_content
 
+
 @dag(
     start_date=datetime(2024, 5, 20),
     schedule="@continuous",
@@ -40,7 +43,7 @@ def kafka_listener():
         topics=[KAFKA_TOPIC],
         apply_function="kafka_listener.process_report_request",
         event_triggered_function=trigger_report_generation_dag,
-        poll_interval=0.1,
+        poll_interval=1,
         poll_timeout=5
     )
 

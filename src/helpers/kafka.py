@@ -5,11 +5,6 @@ from confluent_kafka.admin import AdminClient, NewTopic
 
 from src.config import Config
 
-PRODUCER_CONF = {
-    **Config.KAFKA_CONF,
-    "client.id": socket.gethostname(),
-}
-
 CONSUMER_CONF = {
     **Config.KAFKA_CONF,
     "group.id": "HermesAPIGroup",
@@ -18,21 +13,42 @@ CONSUMER_CONF = {
 
 class KafkaAPI:
     def __init__(self):
-        self.admin = AdminClient(Config.KAFKA_CONF)
-        self.producer = Producer(PRODUCER_CONF)
-        self.consumer = Consumer(CONSUMER_CONF)
+        self._producer_client = None
+        self._consumer_client = None
+        self._admin_client = None
+
+    @property
+    def _admin(self):
+        if self._admin_client:
+            return self._admin_client
+        self._admin_client = AdminClient(Config.KAFKA_CONF)
+        return self._admin_client
+
+    @property
+    def _producer(self):
+        if self._producer_client:
+            return self._producer_client
+        self._producer_client = Producer({
+            **Config.KAFKA_CONF,
+            "client.id": socket.gethostname(),
+        })
+        return self._producer_client
+
+    @property
+    def _consumer(self):
+        if self._consumer_client:
+            return self._consumer_client
+        self._consumer_client = Producer(CONSUMER_CONF)
+        return self._consumer_client
 
     def _list_topics(self):
-        return self.admin.list_topics().topics
+        return self._admin.list_topics().topics
 
     def _create_topic(self, topic):
-        self.admin.create_topics([NewTopic(topic)])
+        self._admin.create_topics([NewTopic(topic)])
 
     def produce(self, topic, message):
-        if topic not in self._list_topics():
-            self._create_topic(topic)
-        
-        self.producer.produce(topic, message)
-        self.producer.flush()
+        self._producer.produce(topic, message)
+        self._producer.flush()
 
 Kafka = KafkaAPI()

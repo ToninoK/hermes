@@ -10,8 +10,30 @@ services:
       - "5000:5000"
     volumes:
       - .:/app
+    command: "/app/entrypoint.sh api_dev"
+
   hermes_cache:
     container_name: hermes_cache
     image: "redis:alpine"
+
+  worker:
+    container_name: celery_worker_hermes
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    build:
+      context: .
+    command: "/app/entrypoint.sh worker"
+
+  scheduler:
+    container_name: celery_scheduler_hermes
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    build:
+      context: .
+    command: "/app/entrypoint.sh scheduler"
 volumes:
   pg_data: {}

@@ -21,6 +21,8 @@ redis = "^5.0.4"
 yoyo-migrations = "^8.2.0"
 passlib = "^1.7.4"
 sqlalchemy = "^2.0.30"
+python-dateutil = "^2.9.0.post0"
+celery = "^5.4.0"
 
 
 [build-system]
