@@ -12,6 +12,7 @@ from airflow.providers.smtp.hooks.smtp import SmtpHook
     schedule=None,
     catchup=False,
     dag_id="report_generation",
+    max_active_runs=10,
 )
 def consume_reports():
 
@@ -25,18 +26,22 @@ def consume_reports():
             results = cursor.fetchall()
             columns = [col.name for col in cursor.description]
         return [dict(zip(columns, row)) for row in results]
-    
+
     @task
     def store_to_csv(**context):
         results = context["task_instance"].xcom_pull(task_ids="generate_report")
         if not results:
             return
-        file_path = "./dags/include/reports/" + context["params"]["config"]["config_key"] + ".csv"
+        file_path = (
+            "./dags/include/reports/"
+            + context["params"]["config"]["config_key"]
+            + ".csv"
+        )
         with open(file_path, "w") as f:
             writer = csv.DictWriter(f, fieldnames=results[0].keys())
             writer.writeheader()
             writer.writerows(results)
-    
+
     @task
     def send_mail(**context):
         results = context["task_instance"].xcom_pull(task_ids="generate_report")
@@ -44,7 +49,7 @@ def consume_reports():
             return
         config_key = context["params"]["config"]["config_key"]
         emails = context["params"]["config"]["emails"]
-        hook = SmtpHook(smtp_conn_id='mailtrap_smtp')
+        hook = SmtpHook(smtp_conn_id="mailtrap_smtp")
         sender = "Hermes Demo <hermes.demo.tk@gmail.com>"
         file_path = "./dags/include/reports/" + config_key + ".csv"
         with hook.get_conn() as smtp_client:
@@ -53,10 +58,10 @@ def consume_reports():
                 subject="Your Report by Hermes",
                 from_email=sender,
                 html_content="<h1>Your report is ready!</h1>The report you requested is attached in the email.",
-                files=[file_path]
+                files=[file_path],
             )
 
-
     generate_report() >> store_to_csv() >> send_mail()
+
 
 consume_reports()

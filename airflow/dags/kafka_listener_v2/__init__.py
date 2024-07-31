@@ -1,38 +1,50 @@
 from datetime import datetime, timedelta
+import uuid
+import json
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
-from dags.include.operators.kafka import KafkaMessageOperator
-
+from dags.include.operators.kafka import KafkaMessageCallbackOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'start_date': datetime(2023, 1, 1),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    "owner": "airflow",
+    "depends_on_past": False,
+    "start_date": datetime(2024, 1, 1),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
 }
 
 dag = DAG(
-    'kafka_message_processing',
+    "kafka_custom_triggerer",
     default_args=default_args,
-    schedule_interval="@once",
-    catchup=False
+    schedule_interval="@continuous",
+    max_active_runs=1,
+    catchup=False,
 )
 
-def process_messages(ti):
-    messages = ti.xcom_pull(task_ids='poll_kafka_messages')
-    for message in messages:
-        # Process each message here
-        print(f"Processing message: {message}")
 
-kafka_task = KafkaMessageOperator(
-    task_id='poll_kafka_messages',
-    topic='report_requests',
-    kafka_conn_id='kafka_listener_v2',
+def trigger_report_generation_dag(event, **context):
+    print("Triggering report: ", event)
+    TriggerDagRunOperator(
+        trigger_dag_id="report_generation",
+        task_id=f"triggered_downstream_report_generation_dag_{uuid.uuid4()}",
+        wait_for_completion=False,  # wait for downstream DAG completion
+        conf={
+            "config": event,
+        },
+        poke_interval=5,
+    ).execute(context)
+
+
+kafka_task = KafkaMessageCallbackOperator(
+    task_id="poll_kafka_messages",
+    topic="report_requests",
+    callback=trigger_report_generation_dag,
+    kafka_conn_id="kafka_listener_v2",
     batch_size=5,
     poll_interval=3.0,
     dag=dag,
