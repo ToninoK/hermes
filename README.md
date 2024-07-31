@@ -4,6 +4,7 @@ Report delivery system concept. Consists of:
 - API written in Flask
 - Astronomer (Airflow) - Local deployment
 - Kafka - Managed instance
+- PG Database - Managed instance
 
 ## Local development
 
