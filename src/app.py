@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 
-
 from fastapi import FastAPI
 
 from src.views import auth, reports, stores

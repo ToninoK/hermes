@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 import json
 
-from src.db.schedules import get_schedules, create_schedule
-from src.helpers.auth import JWTBearer, get_current_user
+from src.db.schedules import create_schedule, get_schedules
+from src.helpers.auth import get_current_user, JWTBearer
 from src.helpers.kafka import Kafka
 from src.helpers.report_factory import ReportGenerator
 from src.schemas.report_config import ReportConfig

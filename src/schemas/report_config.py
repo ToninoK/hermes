@@ -1,9 +1,9 @@
+from typing import List, Union, Literal, Annotated
 import hashlib
 import json
-from typing import List, Union, Literal, Annotated
 
 from fastapi.exceptions import HTTPException
-from pydantic import BaseModel, NaiveDatetime, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, NaiveDatetime
 
 from src.helpers.auth import get_current_user
 from src.helpers.acl import has_permission

@@ -2,9 +2,8 @@ import csv
 
 from airflow.decorators import dag, task
 from airflow.hooks.postgres_hook import PostgresHook
-from pendulum import datetime
-
 from airflow.providers.smtp.hooks.smtp import SmtpHook
+from pendulum import datetime
 
 
 @dag(

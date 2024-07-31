@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from src.helpers.auth import (
+    blacklist_token,
     create_access_token,
     get_current_user,
-    JWTBearer,
     get_password_hash,
+    JWTBearer,
     verify_password,
-    blacklist_token,
 )
 from src.helpers.cache import acl_cache
 from src.db.users import create_user, get_user_by_email, update_user_by_email

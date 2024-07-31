@@ -3,10 +3,10 @@ import uuid
 import json
 
 from airflow.decorators import dag
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.apache.kafka.sensors.kafka import (
     AwaitMessageTriggerFunctionSensor,
 )
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 KAFKA_TOPIC = "report_requests"
 

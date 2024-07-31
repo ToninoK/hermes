@@ -1,6 +1,6 @@
 import socket
 
-from confluent_kafka import Producer, Consumer
+from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 
 from src.config import Config

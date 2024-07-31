@@ -4,8 +4,8 @@ The implementation itself can be a lot smarter than the one provided below.
 This simply serves as a means to demonstrate the complete concept of this project.
 """
 
-import operator
 from os import environ
+import operator
 
 import sqlalchemy as sa
 from sqlalchemy.sql.expression import Select, and_, select

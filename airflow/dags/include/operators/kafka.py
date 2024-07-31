@@ -1,12 +1,13 @@
+from typing import Any, Callable, Dict, Tuple
 import asyncio
 import json
 import logging
-from typing import Dict, Any, Tuple, Callable
-from airflow.triggers.base import BaseTrigger, TriggerEvent
-from confluent_kafka import Consumer, KafkaError, KafkaException
-from airflow.models import BaseOperator
-from airflow.utils.decorators import apply_defaults
+
 from airflow.hooks.base_hook import BaseHook
+from airflow.models import BaseOperator
+from airflow.triggers.base import BaseTrigger, TriggerEvent
+from airflow.utils.decorators import apply_defaults
+from confluent_kafka import Consumer, KafkaError, KafkaException
 
 
 class KafkaMessageTrigger(BaseTrigger):

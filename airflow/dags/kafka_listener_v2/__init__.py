@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 import uuid
 import json
 
-from airflow import DAG
+from airflow.decorators import dag
 from airflow.operators.python import PythonOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 from dags.include.operators.kafka import KafkaMessageCallbackOperator
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 default_args = {
     "owner": "airflow",
@@ -17,14 +17,6 @@ default_args = {
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
 }
-
-dag = DAG(
-    "kafka_custom_triggerer",
-    default_args=default_args,
-    schedule_interval="@continuous",
-    max_active_runs=1,
-    catchup=False,
-)
 
 
 def trigger_report_generation_dag(event, **context):
@@ -39,16 +31,21 @@ def trigger_report_generation_dag(event, **context):
         poke_interval=5,
     ).execute(context)
 
-
-kafka_task = KafkaMessageCallbackOperator(
-    task_id="poll_kafka_messages",
-    topic="report_requests",
-    callback=trigger_report_generation_dag,
-    kafka_conn_id="kafka_listener_v2",
-    batch_size=5,
-    poll_interval=3.0,
-    dag=dag,
+@dag(
+    default_args=default_args,
+    schedule_interval="@continuous",
+    max_active_runs=1,
+    catchup=False,
 )
+def kafka_custom_triggerer():
+    kafka_task = KafkaMessageCallbackOperator(
+        task_id="poll_kafka_messages",
+        topic="report_requests",
+        callback=trigger_report_generation_dag,
+        kafka_conn_id="kafka_listener_v2",
+        batch_size=5,
+        poll_interval=3.0,
+        dag=dag,
+    )
 
-
-kafka_task
+    kafka_task
