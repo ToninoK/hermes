@@ -4,7 +4,7 @@ scheduled reports
 
 from yoyo import step
 
-__depends__ = {'20240527_03_npNzg-reporting-seed-data'}
+__depends__ = {"20240527_03_npNzg-reporting-seed-data"}
 
 steps = [
     step(

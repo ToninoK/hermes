@@ -32,7 +32,8 @@ steps = [
         ('Nagoya', 'Japan'),
         ('Berlin', 'Germany'),
         ('Munich', 'Germany');
-    """),
+    """
+    ),
     step(
         """CREATE TABLE employees (
             id SERIAL PRIMARY KEY,

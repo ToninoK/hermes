@@ -9,6 +9,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 @router.get("/", dependencies=[Depends(JWTBearer())])
 async def index():
     return await fetch_stores()

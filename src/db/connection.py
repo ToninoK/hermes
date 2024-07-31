@@ -16,7 +16,9 @@ class PgConnection:
 
     async def get_connection_pool(self):
         if not self._connection_pool:
-            self._connection_pool = await aiopg.create_pool(dsn=_DSN, sslmode='require', timeout=_TIMEOUT)
+            self._connection_pool = await aiopg.create_pool(
+                dsn=_DSN, sslmode="require", timeout=_TIMEOUT
+            )
 
         return self._connection_pool
 

@@ -74,7 +74,9 @@ def decode_jwt(token: str):
     try:
         _, hit = auth_cache.get(token)
         if hit:
-            raise HTTPException(status_code=401, detail="Token invalid, request a new one")
+            raise HTTPException(
+                status_code=401, detail="Token invalid, request a new one"
+            )
 
         payload = jwt.decode(token, Config.SECRET_KEY, algorithms=[ALGORITHM])
         exp = datetime.fromtimestamp(payload.get("exp", 0))
@@ -83,9 +85,13 @@ def decode_jwt(token: str):
         if not user_id:
             raise HTTPException(status_code=401, detail="Token invalid")
         if exp <= datetime.utcnow():
-            raise HTTPException(status_code=401, detail="Token expired, request a new one")
+            raise HTTPException(
+                status_code=401, detail="Token expired, request a new one"
+            )
     except PyJWTError as ex:
-        raise HTTPException(status_code=401, detail="Error while decoding token.") from ex
+        raise HTTPException(
+            status_code=401, detail="Error while decoding token."
+        ) from ex
 
     return payload
 
@@ -98,7 +104,9 @@ async def get_current_user(token: str):
     :return: currently logged in user
     """
     payload = decode_jwt(token)
-    user = await get_user_by_email(payload.get("sub"), ["id", "email", "role", "store_id"])
+    user = await get_user_by_email(
+        payload.get("sub"), ["id", "email", "role", "store_id"]
+    )
     if user is None:
         raise HTTPException(status_code=401)
 

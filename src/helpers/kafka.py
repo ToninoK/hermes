@@ -28,10 +28,12 @@ class KafkaAPI:
     def _producer(self):
         if self._producer_client:
             return self._producer_client
-        self._producer_client = Producer({
-            **Config.KAFKA_CONF,
-            "client.id": socket.gethostname(),
-        })
+        self._producer_client = Producer(
+            {
+                **Config.KAFKA_CONF,
+                "client.id": socket.gethostname(),
+            }
+        )
         return self._producer_client
 
     @property
@@ -50,5 +52,6 @@ class KafkaAPI:
     def produce(self, topic, message):
         self._producer.produce(topic, message)
         self._producer.flush()
+
 
 Kafka = KafkaAPI()

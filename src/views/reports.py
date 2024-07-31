@@ -24,7 +24,9 @@ async def create_report(report_config: ReportConfig, token=Depends(JWTBearer()))
 
 
 @router.post("/schedule/<frequency>")
-async def schedule_report(frequency: str, report_config: ReportConfig, token=Depends(JWTBearer())):
+async def schedule_report(
+    frequency: str, report_config: ReportConfig, token=Depends(JWTBearer())
+):
     await report_config.verify_acl(token)
     user = await get_current_user(token)
     data = await report_config.generate_config(token=token)

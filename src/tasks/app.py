@@ -12,37 +12,41 @@ from src.helpers.kafka import Kafka
 from src.helpers.report_factory import ReportGenerator
 
 
-REDIS_HOST = environ.get('REDIS_HOST', 'localhost')
-REDIS_PORT = environ.get('REDIS_PORT', 6379)
+REDIS_HOST = environ.get("REDIS_HOST", "localhost")
+REDIS_PORT = environ.get("REDIS_PORT", 6379)
 redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 app = Celery(__name__, broker=redis_url, result_backend=redis_url)
 app.conf.beat_schedule = {
-    'sr_daily': {
-        'task': 'scheduled_reports_daily',
-        'schedule': 25,
+    "sr_daily": {
+        "task": "scheduled_reports_daily",
+        "schedule": 25,
     },
-    'sr_weekly': {
-        'task': 'scheduled_reports_weekly',
-        'schedule': crontab(hour="7", minute="0", day_of_week="mon"),
+    "sr_weekly": {
+        "task": "scheduled_reports_weekly",
+        "schedule": crontab(hour="7", minute="0", day_of_week="mon"),
     },
-    'sr_monthly': {
-        'task': 'scheduled_reports_monthly',
-        'schedule': crontab(day_of_month="1", hour="7", minute="0"),
+    "sr_monthly": {
+        "task": "scheduled_reports_monthly",
+        "schedule": crontab(day_of_month="1", hour="7", minute="0"),
     },
 }
-app.conf.timezone = 'UTC'
+app.conf.timezone = "UTC"
 
 
 def _prep_date_filters(date, frequency):
-    if frequency == 'daily':
+    if frequency == "daily":
         start_date = date - relativedelta(days=1)
-    elif frequency == 'weekly':
+    elif frequency == "weekly":
         start_date = date - relativedelta(weeks=1)
     else:
         start_date = date - relativedelta(months=1)
 
     return (
-        {"field": "start_date", "operator": ">=", "value": start_date.strftime("%Y-%m-%d")},
+        {
+            "field": "start_date",
+            "operator": ">=",
+            "value": start_date.strftime("%Y-%m-%d"),
+        },
         {"field": "end_date", "operator": "<", "value": date.strftime("%Y-%m-%d")},
     )
 
@@ -51,9 +55,13 @@ def _prep_config(schedule, current_date=None):
     report_config = schedule["config"]
     frequency = schedule["frequency"]
     filters = report_config["config"]["filters"]
-    filters = [filt for filt in filters if filt["field"] not in ["start_date", "end_date"]]
+    filters = [
+        filt for filt in filters if filt["field"] not in ["start_date", "end_date"]
+    ]
 
-    start_date, end_date = _prep_date_filters(current_date or datetime.now().date(), frequency)
+    start_date, end_date = _prep_date_filters(
+        current_date or datetime.now().date(), frequency
+    )
     filters.append(start_date)
     filters.append(end_date)
     report_config["config"]["filters"] = filters

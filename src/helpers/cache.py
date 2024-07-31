@@ -4,6 +4,7 @@ from src.config import Config
 
 import pickle
 
+
 class Cache:
     def __init__(self, namespace):
         self.namespace = namespace

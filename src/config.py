@@ -2,9 +2,9 @@ from os import environ
 
 
 class Config:
-    KAFKA_USERNAME = environ.get('KAFKA_USERNAME')
-    KAFKA_PASSWORD = environ.get('KAFKA_PASSWORD')
-    KAFKA_BOOTSTRAP_SERVERS_URL = environ.get('KAFKA_BOOTSTRAP_SERVERS_URL')
+    KAFKA_USERNAME = environ.get("KAFKA_USERNAME")
+    KAFKA_PASSWORD = environ.get("KAFKA_PASSWORD")
+    KAFKA_BOOTSTRAP_SERVERS_URL = environ.get("KAFKA_BOOTSTRAP_SERVERS_URL")
     KAFKA_CONF = {
         "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS_URL,
         "security.protocol": "SASL_SSL",

@@ -4,7 +4,7 @@ reporting seed data
 
 from yoyo import step
 
-__depends__ = {'20240527_02_P0EDn-create-reporting-tables'}
+__depends__ = {"20240527_02_P0EDn-create-reporting-tables"}
 
 steps = [
     step(
@@ -24,7 +24,9 @@ steps = [
         ('Headphones', 'Electronics', 149.99),
         ('Mouse', 'Electronics', 24.99),
         ('Keyboard', 'Electronics', 49.99);
-    """, "ALTER SEQUENCE products_id_seq RESTART WITH 1;"),
+    """,
+        "ALTER SEQUENCE products_id_seq RESTART WITH 1;",
+    ),
     step(
         """INSERT INTO employees (email, name, store_id, role, password) VALUES 
         ('john.doe@example.com', 'John Doe', 1, 'store_manager', '$2b$12$SOmiJQiZgbP4n7EMYfDZ/Oaru158ZTgpsWshpC8qVcWSa.hoy1C3u'),
@@ -58,7 +60,9 @@ steps = [
         ('bruce.clark@example.com', 'Bruce Clark', 15, 'employee', '$2b$12$SOmiJQiZgbP4n7EMYfDZ/Oaru158ZTgpsWshpC8qVcWSa.hoy1C3u'),
         ('diana.evans2@example.com', 'Diana Evans', 15, 'employee', '$2b$12$SOmiJQiZgbP4n7EMYfDZ/Oaru158ZTgpsWshpC8qVcWSa.hoy1C3u'),
         ('hermes@example.com', 'Hermes', 1, 'company_manager', '$2b$12$SOmiJQiZgbP4n7EMYfDZ/Oaru158ZTgpsWshpC8qVcWSa.hoy1C3u');
-    """, "ALTER SEQUENCE employees_id_seq RESTART WITH 1;"),
+    """,
+        "ALTER SEQUENCE employees_id_seq RESTART WITH 1;",
+    ),
     step(
         """INSERT INTO inventory (product_id, store_id, quantity) VALUES 
         (1, 1, 50),
@@ -91,7 +95,8 @@ steps = [
         (13, 15, 75),
         (14, 15, 90),
         (15, 15, 60);
-    """),
+    """
+    ),
     step(
         """INSERT INTO sales (store_id, product_id, order_quantity, employee_id, date) VALUES 
         (1, 1, 1, 1, '2024-05-20'),
@@ -123,5 +128,7 @@ steps = [
         (14, 12, 1, 27, '2024-05-17'),
         (15, 14, 1, 29, '2024-05-22'),
         (15, 15, 3, 30, '2024-05-10');
-    """, "ALTER SEQUENCE sales_id_seq RESTART WITH 1;"),
+    """,
+        "ALTER SEQUENCE sales_id_seq RESTART WITH 1;",
+    ),
 ]

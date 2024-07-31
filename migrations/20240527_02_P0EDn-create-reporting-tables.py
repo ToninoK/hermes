@@ -4,7 +4,7 @@ create reporting tables
 
 from yoyo import step
 
-__depends__ = {'20240527_01_7NG6b-create-users-table'}
+__depends__ = {"20240527_01_7NG6b-create-users-table"}
 
 steps = [
     step(

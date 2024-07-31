@@ -39,10 +39,20 @@ class EndDateFilter(BaseModel):
     value: str
 
 
-StorePerformanceFilter = Annotated[Union[StoreIdFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")]
-EmployeePerformanceFilter = Annotated[Union[EmployeeNameFilter, StoreIdFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")]
-ProductPerformanceFilter = Annotated[Union[ProductNameFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")]
-StoreInventoryFilter = Annotated[Union[StoreIdFilter, ProductNameFilter], Field(discriminator="field")]
+StorePerformanceFilter = Annotated[
+    Union[StoreIdFilter, StartDateFilter, EndDateFilter], Field(discriminator="field")
+]
+EmployeePerformanceFilter = Annotated[
+    Union[EmployeeNameFilter, StoreIdFilter, StartDateFilter, EndDateFilter],
+    Field(discriminator="field"),
+]
+ProductPerformanceFilter = Annotated[
+    Union[ProductNameFilter, StartDateFilter, EndDateFilter],
+    Field(discriminator="field"),
+]
+StoreInventoryFilter = Annotated[
+    Union[StoreIdFilter, ProductNameFilter], Field(discriminator="field")
+]
 
 
 class StorePerformanceReportConfig(BaseModel):
@@ -78,22 +88,29 @@ class ReportConfig(BaseModel):
         StorePerformanceReportConfig,
         EmployeePerformanceReportConfig,
         ProductPerformanceReportConfig,
-        StoreInventoryReportConfig
+        StoreInventoryReportConfig,
     ]
     emails: List[EmailStr]
 
     async def verify_acl(self, token):
         user = await get_current_user(token)
-        if not has_permission(user["role"], self.config.report_name, self.config.model_dump(), store_id=user["store_id"]):
-            raise HTTPException(status_code=403, detail="User does not have permission to access this report")
+        if not has_permission(
+            user["role"],
+            self.config.report_name,
+            self.config.model_dump(),
+            store_id=user["store_id"],
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="User does not have permission to access this report",
+            )
 
     async def generate_config(self, token):
         user = await get_current_user(token)
         dumped_data = super().model_dump()
         user_role = user["role"]
         report_config_hash_str = (
-            json.dumps(dumped_data["config"], sort_keys=True)
-            + user_role
+            json.dumps(dumped_data["config"], sort_keys=True) + user_role
         )
         report_config_hash = hashlib.sha256(report_config_hash_str.encode()).hexdigest()
         return {**dumped_data, "config_key": report_config_hash}

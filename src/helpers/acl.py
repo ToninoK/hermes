@@ -17,10 +17,9 @@ class IsOwnStoreCondition:
             return filt.get("value") == self.kwargs.get("store_id")
         return False  # Filter on own store is required
 
+
 class ACLConditionFactory:
-    ACL_CONDITIONS = [
-        IsOwnStoreCondition
-    ]
+    ACL_CONDITIONS = [IsOwnStoreCondition]
 
     @classmethod
     def get_condition(cls, condition_type):
@@ -32,11 +31,11 @@ class ACLConditionFactory:
 
 def load_acl():
     """Loads the ACL configuration from the acl.yml file"""
-    with open('./src/static/acl.yaml') as f:
+    with open("./src/static/acl.yaml") as f:
         data = safe_load(f)
         for role in data:
             acl_cache.set(role, data[role])
-    
+
 
 def _get_report_type_access(role, report_type) -> dict:
     """Returns the config of report that the user is allowed to request"""
@@ -61,21 +60,26 @@ def _check_conditions(allowed_config, config, **kwargs):
                 return False
     return True
 
+
 def has_permission(role, report_type, config, **kwargs) -> bool:
     """Compares the given config with the allowed config for the given role and report type."""
     allowed_config = _get_report_type_access(role, report_type)
     if not allowed_config:
         return False
 
-    metrics_allowed = set(config.get("metrics", [])) <= set(allowed_config.get("metrics", []))
-    dimensions_allowed = set(config.get("dimensions", [])) <= set(allowed_config.get("dimensions", []))
+    metrics_allowed = set(config.get("metrics", [])) <= set(
+        allowed_config.get("metrics", [])
+    )
+    dimensions_allowed = set(config.get("dimensions", [])) <= set(
+        allowed_config.get("dimensions", [])
+    )
 
     requested_filters = {filt.get("field") for filt in config.get("filters", [])}
     filters_allowed = requested_filters <= set(allowed_config.get("filters", {}).keys())
 
     return (
-        metrics_allowed 
-        and dimensions_allowed 
-        and filters_allowed 
+        metrics_allowed
+        and dimensions_allowed
+        and filters_allowed
         and _check_conditions(allowed_config, config, **kwargs)
     )

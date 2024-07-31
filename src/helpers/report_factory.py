@@ -15,41 +15,51 @@ _DSN = environ.get("PGHOST", "")
 
 metadata = sa.MetaData()
 
-stores_table = sa.Table('stores', metadata,
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('city', sa.String(255)),
-    sa.Column('country', sa.String(255)),
+stores_table = sa.Table(
+    "stores",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("city", sa.String(255)),
+    sa.Column("country", sa.String(255)),
 )
 
-employees_table = sa.Table('employees', metadata,
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('email', sa.String(255)),
-    sa.Column('password', sa.String(255)),
-    sa.Column('role', sa.String(255)),
-    sa.Column('name', sa.String(255)),
-    sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id')),
+employees_table = sa.Table(
+    "employees",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("email", sa.String(255)),
+    sa.Column("password", sa.String(255)),
+    sa.Column("role", sa.String(255)),
+    sa.Column("name", sa.String(255)),
+    sa.Column("store_id", sa.Integer, sa.ForeignKey("stores.id")),
 )
 
-products_table = sa.Table('products', metadata,
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('name', sa.String(255)),
-    sa.Column('category', sa.String(255)),
-    sa.Column('price', sa.Float),
+products_table = sa.Table(
+    "products",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("name", sa.String(255)),
+    sa.Column("category", sa.String(255)),
+    sa.Column("price", sa.Float),
 )
 
-inventory_table = sa.Table('inventory', metadata,
-    sa.Column('product_id', sa.Integer, sa.ForeignKey('products.id')),
-    sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id')),
-    sa.Column('quantity', sa.Integer),
+inventory_table = sa.Table(
+    "inventory",
+    metadata,
+    sa.Column("product_id", sa.Integer, sa.ForeignKey("products.id")),
+    sa.Column("store_id", sa.Integer, sa.ForeignKey("stores.id")),
+    sa.Column("quantity", sa.Integer),
 )
 
-sales_table = sa.Table('sales', metadata,
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id')),
-    sa.Column('product_id', sa.Integer, sa.ForeignKey('products.id')),
-    sa.Column('order_quantity', sa.Integer),
-    sa.Column('employee_id', sa.Integer, sa.ForeignKey('employees.id')),
-    sa.Column('date', sa.Date, default=sa.func.current_date()),
+sales_table = sa.Table(
+    "sales",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("store_id", sa.Integer, sa.ForeignKey("stores.id")),
+    sa.Column("product_id", sa.Integer, sa.ForeignKey("products.id")),
+    sa.Column("order_quantity", sa.Integer),
+    sa.Column("employee_id", sa.Integer, sa.ForeignKey("employees.id")),
+    sa.Column("date", sa.Date, default=sa.func.current_date()),
 )
 
 
@@ -85,7 +95,7 @@ class BaseReport:
     @property
     def dimensions(self):
         return self.report_config.get("dimensions", [])
-    
+
     @property
     def filters(self):
         return self.report_config.get("filters", [])
@@ -99,9 +109,9 @@ class BaseReport:
         op_func = self.OPERATOR_MAPPING.get(operator)
         if op_func is None or mapped_field is None:
             raise ValueError("Invalid operator or field provided")
-        
+
         return op_func(mapped_field, value)
-    
+
     def select(self):
         dimensions = [self.NAME_MAPPING.get(dim) for dim in self.dimensions]
         metrics = [self.NAME_MAPPING.get(metric) for metric in self.metrics]
@@ -111,7 +121,7 @@ class BaseReport:
     def apply_filters(self, query: Select) -> Select:
         filters = [self._consume_filter(filter) for filter in self.filters]
         return query.where(and_(*filters) if filters else sa.true())
-    
+
     def apply_group_by(self, query: Select) -> Select:
         return query.group_by(*[self.NAME_MAPPING.get(dim) for dim in self.dimensions])
 
@@ -123,17 +133,19 @@ class StorePerformanceReport(BaseReport):
         "store_country": stores_table.c.country.label("store_country"),
         "date": sales_table.c.date.label("date"),
         "total_sales": sa.func.sum(products_table.c.price).label("total_sales"),
-        "number_of_transactions": sa.func.count(sales_table.c.product_id).label("number_of_transactions"),
-        "average_sale_value": sa.func.avg(products_table.c.price)/sa.func.count(sales_table.c.product_id).label("average_sale_value"),
+        "number_of_transactions": sa.func.count(sales_table.c.product_id).label(
+            "number_of_transactions"
+        ),
+        "average_sale_value": sa.func.avg(products_table.c.price)
+        / sa.func.count(sales_table.c.product_id).label("average_sale_value"),
         "store_id": sales_table.c.store_id.label("store_id"),
         "start_date": sales_table.c.date.label("start_date"),
         "end_date": sales_table.c.date.label("end_date"),
     }
 
-    JOIN = (
-        sales_table.join(products_table, sales_table.c.product_id == products_table.c.id)
-        .join(stores_table, sales_table.c.store_id == stores_table.c.id)
-    )
+    JOIN = sales_table.join(
+        products_table, sales_table.c.product_id == products_table.c.id
+    ).join(stores_table, sales_table.c.store_id == stores_table.c.id)
 
 
 class StoreInventoryReport(BaseReport):
@@ -147,10 +159,9 @@ class StoreInventoryReport(BaseReport):
         "store_id": stores_table.c.id.label("store_id"),
     }
 
-    JOIN = (
-        stores_table.join(inventory_table, stores_table.c.id == inventory_table.c.store_id)
-        .join(products_table, inventory_table.c.product_id == products_table.c.id)
-    )
+    JOIN = stores_table.join(
+        inventory_table, stores_table.c.id == inventory_table.c.store_id
+    ).join(products_table, inventory_table.c.product_id == products_table.c.id)
 
 
 class ProductPerformanceReport(BaseReport):
@@ -160,17 +171,20 @@ class ProductPerformanceReport(BaseReport):
         "store_country": stores_table.c.country.label("store_country"),
         "store_city": stores_table.c.city.label("store_city"),
         "total_sales": sa.func.sum(products_table.c.price).label("total_sales"),
-        "average_sale_value": sa.func.avg(products_table.c.price).label("average_sale_value"),
-        "total_products_sold": sa.func.sum(sales_table.c.order_quantity).label("total_products_sold"),
+        "average_sale_value": sa.func.avg(products_table.c.price).label(
+            "average_sale_value"
+        ),
+        "total_products_sold": sa.func.sum(sales_table.c.order_quantity).label(
+            "total_products_sold"
+        ),
         "store_id": stores_table.c.id.label("store_id"),
         "start_date": sales_table.c.date.label("start_date"),
         "end_date": sales_table.c.date.label("end_date"),
     }
 
-    JOIN = (
-        products_table.join(sales_table, products_table.c.id == sales_table.c.product_id)
-        .join(stores_table, sales_table.c.store_id == stores_table.c.id)
-    )
+    JOIN = products_table.join(
+        sales_table, products_table.c.id == sales_table.c.product_id
+    ).join(stores_table, sales_table.c.store_id == stores_table.c.id)
 
 
 class EmployeePerformanceReport(BaseReport):
@@ -179,16 +193,24 @@ class EmployeePerformanceReport(BaseReport):
         "employee_name": employees_table.c.name.label("employee_name"),
         "store_city": stores_table.c.city.label("store_city"),
         "store_country": stores_table.c.country.label("store_country"),
-        "employee_total_sales": sa.func.sum(products_table.c.price).label("employee_total_sales"),
-        "employee_average_sale_value": sa.func.avg(products_table.c.price).label("employee_average_sale_value"),
-        "number_of_transactions": sa.func.count(sales_table.c.product_id).label("number_of_transactions"),
+        "employee_total_sales": sa.func.sum(products_table.c.price).label(
+            "employee_total_sales"
+        ),
+        "employee_average_sale_value": sa.func.avg(products_table.c.price).label(
+            "employee_average_sale_value"
+        ),
+        "number_of_transactions": sa.func.count(sales_table.c.product_id).label(
+            "number_of_transactions"
+        ),
         "store_id": stores_table.c.id.label("store_id"),
         "start_date": sales_table.c.date.label("start_date"),
         "end_date": sales_table.c.date.label("end_date"),
     }
 
     JOIN = (
-        employees_table.join(sales_table, employees_table.c.id == sales_table.c.employee_id)
+        employees_table.join(
+            sales_table, employees_table.c.id == sales_table.c.employee_id
+        )
         .join(products_table, sales_table.c.product_id == products_table.c.id)
         .join(stores_table, sales_table.c.store_id == stores_table.c.id)
     )
@@ -199,7 +221,7 @@ class ReportGeneratorAPI:
         "store_performance": StorePerformanceReport,
         "store_inventory": StoreInventoryReport,
         "product_performance": ProductPerformanceReport,
-        "employee_performance": EmployeePerformanceReport
+        "employee_performance": EmployeePerformanceReport,
     }
 
     def __init__(self) -> None:
@@ -209,7 +231,7 @@ class ReportGeneratorAPI:
         if self.engine:
             return
         self.engine = sa.create_engine(_DSN)
-    
+
     def _conn(self):
         self._init_engine()
         return self.engine.connect()
@@ -223,7 +245,9 @@ class ReportGeneratorAPI:
         if klass:
             instance = klass(report_config)
             query = instance.build_query()
-            compiled = query.compile(bind=self.engine, compile_kwargs={"literal_binds": True})
+            compiled = query.compile(
+                bind=self.engine, compile_kwargs={"literal_binds": True}
+            )
             return str(compiled)
         else:
             raise ValueError("InvalidReportType")

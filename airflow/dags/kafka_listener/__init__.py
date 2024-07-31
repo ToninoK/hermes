@@ -3,7 +3,9 @@ import uuid
 import json
 
 from airflow.decorators import dag
-from airflow.providers.apache.kafka.sensors.kafka import AwaitMessageTriggerFunctionSensor
+from airflow.providers.apache.kafka.sensors.kafka import (
+    AwaitMessageTriggerFunctionSensor,
+)
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 KAFKA_TOPIC = "report_requests"
@@ -44,9 +46,10 @@ def kafka_listener():
         apply_function="kafka_listener.process_report_request",
         event_triggered_function=trigger_report_generation_dag,
         poll_interval=1,
-        poll_timeout=5
+        poll_timeout=5,
     )
 
     topic_sensor
+
 
 kafka_listener()
