@@ -45,7 +45,8 @@ def kafka_custom_triggerer():
         kafka_conn_id="kafka_listener_v2",
         batch_size=5,
         poll_interval=3.0,
-        dag=dag,
     )
 
     kafka_task
+
+kafka_custom_triggerer()
